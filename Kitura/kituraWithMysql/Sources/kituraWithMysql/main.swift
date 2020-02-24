@@ -1,6 +1,7 @@
 import Foundation
 import Kitura
-import 
+import HeliumLogger
 
+HeliumLogger.use()
 let app = App()
 app.run()
