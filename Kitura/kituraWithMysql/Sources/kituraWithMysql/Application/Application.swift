@@ -17,7 +17,7 @@ public class App {
 
   public init() {
     router.post("/me", handler: self.postHandler)
-//    router.delete("/me", handler: self.deleteHandler)
+    router.delete("/me", handler: self.deleteHandler)
   }
 
   public func run() {
@@ -32,13 +32,10 @@ extension App {
       guard let connection = connection, let self = self else { return completion(nil, .internalServerError) }
 
       let insertQuery = Insert(into: self.userTable, columns: [self.userTable.name], values: [name.name])
-      let getIDQuery = Select(self.userTable.id, from: self.userTable)
-        .where(self.userTable.name == name.name)
+      let getIDQuery = Select(self.userTable.id, from: self.userTable).where(self.userTable.name == name.name)
 
       connection.execute(query: insertQuery) { result in
-        if result.asError != nil {
-          return completion(nil, .internalServerError)
-        }
+        if result.asError != nil { return completion(nil, .internalServerError) }
 
         connection.execute(query: getIDQuery) { result in
           guard let resultSet = result.asResultSet else { return completion(nil, .internalServerError) }
@@ -52,6 +49,15 @@ extension App {
   }
 
   func deleteHandler(query: IDQuery, completion: @escaping (RequestError?) -> Void) {
+    self.pool.getConnection { [weak self] connection, error in
+      guard let connection = connection, let self = self else { return completion(.internalServerError) }
 
+      let deleteQuery = Delete(from: self.userTable).where(self.userTable.id == query.id)
+
+      connection.execute(query: deleteQuery) { result in
+        if result.asError != nil { return completion(.internalServerError) }
+        return completion(.ok)
+      }
+    }
   }
 }
